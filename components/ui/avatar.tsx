@@ -4,9 +4,10 @@ type AvatarProps = {
   src: string;
   alt: string;
   size?: number;
+  className?: string;
 };
 
-export function Avatar({ src, alt, size = 64 }: AvatarProps) {
+export function Avatar({ src, alt, size = 64, className = "" }: AvatarProps) {
   return (
     <Image
       src={src}
@@ -14,7 +15,7 @@ export function Avatar({ src, alt, size = 64 }: AvatarProps) {
       width={size}
       height={size}
       priority
-      className="rounded-full object-cover"
+      className={`rounded-full object-cover ${className}`}
       style={{ width: size, height: size }}
     />
   );
