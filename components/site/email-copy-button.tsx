@@ -45,7 +45,7 @@ export function EmailCopyButton({ user, domain }: EmailCopyButtonProps) {
         type="button"
         onClick={handleClick}
         aria-label="Copy email address"
-        className="inline-flex cursor-pointer transition-colors hover:text-[var(--foreground)]"
+        className="inline-flex cursor-pointer transition-opacity hover:opacity-60"
       >
         <EnvelopeIcon className="text-[1.15rem]" />
       </button>

@@ -33,7 +33,7 @@ export function SiteHeader() {
     <header className="flex items-center justify-between">
       <Avatar src="/avatar-illustration.png" alt="Jeff Orr" size={56} />
       <nav aria-label="Social links">
-        <ul className="flex items-center gap-6 text-[var(--muted)]">
+        <ul className="flex items-center gap-6 text-[var(--foreground)]">
           {socialLinks.map(({ label, href, icon: Icon }) => (
             <li key={label}>
               <Link
@@ -41,7 +41,7 @@ export function SiteHeader() {
                 aria-label={label}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex transition-colors hover:text-[var(--foreground)]"
+                className="inline-flex transition-opacity hover:opacity-60"
               >
                 <Icon className="text-[1.15rem]" />
               </Link>
