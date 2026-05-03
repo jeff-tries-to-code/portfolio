@@ -27,7 +27,6 @@ const socialLinks: SocialLink[] = [
   },
 ];
 
-const email = "jeff.warren.orr@gmail.com";
 
 export function SiteHeader() {
   return (
@@ -49,7 +48,7 @@ export function SiteHeader() {
             </li>
           ))}
           <li>
-            <EmailCopyButton email={email} />
+            <EmailCopyButton user="jeff.warren.orr" domain="gmail.com" />
           </li>
         </ul>
       </nav>

@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { EnvelopeIcon } from "@/components/ui/icons";
 
 type EmailCopyButtonProps = {
-  email: string;
+  user: string;
+  domain: string;
 };
 
-export function EmailCopyButton({ email }: EmailCopyButtonProps) {
+export function EmailCopyButton({ user, domain }: EmailCopyButtonProps) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
 
@@ -20,6 +21,7 @@ export function EmailCopyButton({ email }: EmailCopyButtonProps) {
 
   const handleClick = async () => {
     try {
+      const email = `${user}@${domain}`;
       await navigator.clipboard.writeText(email);
       setCopied(true);
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -42,7 +44,7 @@ export function EmailCopyButton({ email }: EmailCopyButtonProps) {
       <button
         type="button"
         onClick={handleClick}
-        aria-label={`Copy email address ${email}`}
+        aria-label="Copy email address"
         className="inline-flex cursor-pointer transition-colors hover:text-[var(--foreground)]"
       >
         <EnvelopeIcon className="text-[1.15rem]" />
