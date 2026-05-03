@@ -173,6 +173,9 @@ export function BalloonGame({ className = "" }: BalloonGameProps) {
 
     const onDown = (e: Event) => {
       if (e instanceof MouseEvent && e.button !== 0) return;
+      // Prevent iOS from starting text-selection / callout / scroll
+      // gestures that would steal the touch from us mid-hold.
+      if (e.type === "touchstart" && e.cancelable) e.preventDefault();
       holdingRef.current = true;
       if (stateRef.current === "idle") {
         startIntro();
@@ -183,9 +186,14 @@ export function BalloonGame({ className = "" }: BalloonGameProps) {
     const onUp = () => {
       holdingRef.current = false;
     };
+    // Suppress iOS gesture takeover (selection / scroll) while a hold is in progress.
+    const onTouchMove = (e: TouchEvent) => {
+      if (holdingRef.current && e.cancelable) e.preventDefault();
+    };
 
     wrapper.addEventListener("mousedown", onDown);
-    wrapper.addEventListener("touchstart", onDown, { passive: true });
+    wrapper.addEventListener("touchstart", onDown, { passive: false });
+    wrapper.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("mouseup", onUp);
     window.addEventListener("touchend", onUp);
     window.addEventListener("touchcancel", onUp);
@@ -193,6 +201,7 @@ export function BalloonGame({ className = "" }: BalloonGameProps) {
     return () => {
       wrapper.removeEventListener("mousedown", onDown);
       wrapper.removeEventListener("touchstart", onDown);
+      wrapper.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("mouseup", onUp);
       window.removeEventListener("touchend", onUp);
       window.removeEventListener("touchcancel", onUp);
@@ -386,8 +395,13 @@ export function BalloonGame({ className = "" }: BalloonGameProps) {
     <section
       ref={wrapperRef}
       aria-label="Mini flight game"
-      className={`relative w-full cursor-pointer select-none ${className}`}
-      style={{ height: HEIGHT }}
+      className={`relative w-full cursor-pointer select-none touch-none ${className}`}
+      style={{
+        height: HEIGHT,
+        WebkitUserSelect: "none",
+        WebkitTouchCallout: "none",
+        WebkitTapHighlightColor: "transparent",
+      }}
     >
       <canvas ref={canvasRef} className="block w-full" />
       {(state === "playing" || state === "dead") && (
