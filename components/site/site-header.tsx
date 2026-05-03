@@ -32,7 +32,7 @@ export function SiteHeader() {
   return (
     <header className="flex items-center justify-between">
       <Avatar src="/avatar-illustration.png" alt="Jeff Orr" size={56} />
-      <nav aria-label="Social links">
+      <nav aria-label="Social links" className="mr-2">
         <ul className="flex items-center gap-6 text-[var(--foreground)]">
           {socialLinks.map(({ label, href, icon: Icon }) => (
             <li key={label}>
