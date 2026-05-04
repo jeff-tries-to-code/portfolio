@@ -26,9 +26,7 @@ export default function Home() {
         <div aria-hidden className="grow-[2]" />
       </div>
       <footer style={darkZoneStyle}>
-        <div className="mx-auto max-w-2xl px-6">
-          <BalloonGame />
-        </div>
+        <BalloonGame />
       </footer>
     </>
   );

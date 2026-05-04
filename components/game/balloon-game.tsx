@@ -29,10 +29,15 @@ const MAX_VY = 160;
 
 // Horizontal scroll, in px/sec at REFERENCE_WIDTH.
 const SCROLL_BASE = 115;
-// Scroll multiplier reached at full difficulty.
-const SCROLL_END_MULT = 2.2;
-// Width-independent progress (in reference px) needed to reach max difficulty.
+// Scroll multiplier reached at the end of the initial difficulty ramp.
+const SCROLL_END_MULT = 3.0;
+// Width-independent progress (in reference px) needed to reach the initial cap.
+// Obstacle gap/spacing also use this ramp; once you pass it they stop tightening.
 const DIFFICULTY_RAMP = 3200;
+// Additional speed multiplier per reference-px of progress past the ramp.
+// Causes the game to keep getting faster forever instead of plateauing —
+// at 2x the ramp distance you're +0.19x faster, at 4x you're +0.58x faster.
+const SCROLL_OVERSHOOT_RATE = 0.00006;
 
 const OBSTACLE_WIDTH = 22;
 // Gap height shrinks linearly from BASE → END across the difficulty ramp.
@@ -68,12 +73,17 @@ type BalloonGameProps = {
 };
 
 export function BalloonGame({ className = "" }: BalloonGameProps) {
+  // Wrapper = full-width click/touch target (entire dark footer).
+  // gameArea = visually centered + constrained container that the canvas
+  // measures itself against, so play width matches the reading column.
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const gameAreaRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [state, setState] = useState<GameState>("idle");
   const [score, setScore] = useState(0);
   const [best, setBest] = useState(0);
+  const [showHelp, setShowHelp] = useState(false);
 
   const stateRef = useRef<GameState>("idle");
   const holdingRef = useRef(false);
@@ -121,6 +131,7 @@ export function BalloonGame({ className = "" }: BalloonGameProps) {
     introFromXRef.current = playerXRef.current;
     introFromYRef.current = playerYRef.current;
     introStartRef.current = null;
+    setShowHelp(false);
     setState("starting");
   }
 
@@ -137,19 +148,20 @@ export function BalloonGame({ className = "" }: BalloonGameProps) {
     lastScoreSetRef.current = 0;
     introProgressRef.current = 1;
     setScore(0);
+    setShowHelp(false);
     setState("playing");
   }
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const wrapper = wrapperRef.current;
-    if (!canvas || !wrapper) return;
+    const gameArea = gameAreaRef.current;
+    if (!canvas || !gameArea) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const w = wrapper.clientWidth;
+      const w = gameArea.clientWidth;
       widthRef.current = w;
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(HEIGHT * dpr);
@@ -173,6 +185,10 @@ export function BalloonGame({ className = "" }: BalloonGameProps) {
 
     const onDown = (e: Event) => {
       if (e instanceof MouseEvent && e.button !== 0) return;
+      // Skip presses on overlay UI (e.g. "how to play" toggle, help bullets)
+      // so they don't accidentally restart the game or steal touch events.
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("[data-game-ui]")) return;
       // Prevent iOS from starting text-selection / callout / scroll
       // gestures that would steal the touch from us mid-hold.
       if (e.type === "touchstart" && e.cancelable) e.preventDefault();
@@ -260,8 +276,15 @@ export function BalloonGame({ className = "" }: BalloonGameProps) {
         const widthScale = w / REFERENCE_WIDTH;
 
         // Difficulty ramps from 0 → 1 over DIFFICULTY_RAMP reference-px of progress.
+        // Used for obstacle gap/spacing only — those stop tightening at the cap.
         const difficulty = Math.min(1, progressRef.current / DIFFICULTY_RAMP);
-        const speedMult = 1 + difficulty * (SCROLL_END_MULT - 1);
+        // Speed: linear ramp to SCROLL_END_MULT, then a slow perpetual creep
+        // proportional to how far past the ramp we are — never plateaus.
+        const overshoot = Math.max(0, progressRef.current - DIFFICULTY_RAMP);
+        const speedMult =
+          1 +
+          difficulty * (SCROLL_END_MULT - 1) +
+          overshoot * SCROLL_OVERSHOOT_RATE;
 
         // Scroll in actual pixels this frame.
         const scrollPxPerSec = SCROLL_BASE * speedMult * widthScale;
@@ -403,12 +426,44 @@ export function BalloonGame({ className = "" }: BalloonGameProps) {
         WebkitTapHighlightColor: "transparent",
       }}
     >
-      <canvas ref={canvasRef} className="block w-full" />
-      {(state === "playing" || state === "dead") && (
+      <div className="pointer-events-none mx-auto h-full w-full sm:max-w-2xl sm:px-6">
+        <div ref={gameAreaRef} className="h-full w-full">
+          <canvas ref={canvasRef} className="block h-full w-full" />
+        </div>
+      </div>
+      {state === "playing" && (
         <div className="pointer-events-none absolute right-3 top-3 text-[13px] text-[var(--muted)]">
           <span className="tabular-nums text-[var(--foreground)]">{score}</span>
           {best > 0 ? <> · best {best}</> : null}
-          {state === "dead" ? <> · click to restart</> : null}
+        </div>
+      )}
+      {state === "dead" && (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-center text-[13px] text-[var(--muted)]">
+          <div>
+            <span className="tabular-nums text-[var(--foreground)]">
+              {score}
+            </span>
+            {best > 0 ? <> · best {best}</> : null}
+            <> · click to restart · </>
+            <button
+              type="button"
+              data-game-ui
+              onClick={() => setShowHelp((s) => !s)}
+              className="pointer-events-auto cursor-pointer underline decoration-1 underline-offset-[3px] transition-colors hover:text-[var(--foreground)]"
+            >
+              how to play
+            </button>
+          </div>
+          {showHelp && (
+            <ul
+              data-game-ui
+              className="pointer-events-auto mt-2 inline-block list-disc space-y-0.5 pl-5 text-left marker:text-[var(--muted)]"
+            >
+              <li>Click and hold to go up</li>
+              <li>Release to go down</li>
+              <li>Avoid obstacles</li>
+            </ul>
+          )}
         </div>
       )}
       {state === "idle" && (
