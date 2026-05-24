@@ -18,6 +18,11 @@ const weekendProjects: LinkItem[] = [
     href: "https://www.instagram.com/reel/DKueCxfM-vD/?igsh=NTc4MTIwNjQ2YQ==",
     description: "AI-generated calendars.",
   },
+  {
+    label: "DesignEngJobs",
+    href: "https://www.designengjobs.com/",
+    description: "Job board for Design Engineers.",
+  },
 ];
 
 const writing: LinkItem[] = [
